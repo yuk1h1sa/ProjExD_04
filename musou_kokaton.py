@@ -215,8 +215,6 @@ class Shield(pg.sprite.Sprite):
             self.kill() #Shiledsグループからの削除
 
 
-
-
 class Enemy(pg.sprite.Sprite):
     """
     敵機に関するクラス
@@ -289,6 +287,10 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_CAPSLOCK:
+                if score.score >= 50 and len(Shields) == 0:
+                    Shields.add(Shield(bird,400))
+                    score.score -= 50
 
         screen.blit(bg_img, [0, 0])
 
@@ -315,6 +317,11 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+        for bomb in pg.sprite.groupcollide(bombs, Shields, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)
+
 
         bird.update(key_lst, screen)
         beams.update()
@@ -325,6 +332,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        Shields.update() #防御壁の更新
+        Shields.draw(screen) #防御壁の描画
 
         score.update(screen)
         pg.display.update()
