@@ -101,7 +101,7 @@ class Bird(pg.sprite.Sprite):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
         screen.blit(self.image, self.rect)
-    
+
     def get_direction(self) -> tuple[int, int]:
         return self.dire
     
@@ -145,7 +145,7 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, spin=0):   #spinの初期値は０
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
@@ -153,6 +153,7 @@ class Beam(pg.sprite.Sprite):
         super().__init__()
         self.vx, self.vy = bird.get_direction()
         angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle += spin #angleにspinを加える
         self.image = pg.transform.rotozoom(pg.image.load(f"ex04/fig/beam.png"), angle, 2.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -170,6 +171,18 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+
+class NeoBeam: #追加機能４弾幕
+    def __init__(self, bird:Bird, num:int):
+        self.bird = bird
+        self.num = num
+
+    def gen_beams(self): #こうかとんに対し-50°~50°の範囲にbeamを発生させる
+        beam_ls = []
+        for spin in range(-50, 51, 25):
+            beam = Beam(self.bird, spin)
+            beam_ls.append(beam)
+        return beam_ls
 
 class Explosion(pg.sprite.Sprite):
     """
@@ -248,6 +261,40 @@ class Score:
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class Gravity(pg.sprite.Sprite):
+    """
+    重力球の追加
+    """
+    def __init__(self, bird, size, life):
+        super().__init__()
+        #self.rad =  size # ジュウリョクダマの半径：size
+        color = (1, 1, 1)  # 重力タマの色：黒
+        self.image = pg.Surface((2*size, 2*size))
+        pg.draw.circle(self.image, color, (size, size), size)
+        self.image.set_colorkey((0, 0, 0))
+        self.image.set_alpha(200)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx
+        self.rect.centery = bird.rect.centery
+        self.life = life
+        #self.speed = bird.speed
+    def update(self, ):#key_lst)これを追加すれば、球がついてくる機能を有効化できる。:
+        """
+        以下は球がついてくるようになる追加機能である。
+        sum_mv = [0, 0]
+        for k, mv in Bird.delta.items():
+            if key_lst[k]:
+                self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
+                sum_mv[0] += mv[0]
+                sum_mv[1] += mv[1]
+        if check_bound(self.rect) != (True, True):
+            for k, mv in Bird.delta.items():
+                if key_lst[k]:
+                    self.rect.move_ip(-self.speed*mv[0], -self.speed*mv[1])
+        """
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 def main():
     pg.display.set_caption("真！こうかとん無双")
@@ -260,11 +307,12 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
-
+    gravity = pg.sprite.Group()
     tmr = 0
     clock = pg.time.Clock()
     while True:
         key_lst = pg.key.get_pressed()
+        shift_pressed = False
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
@@ -274,6 +322,11 @@ def main():
                 bird.speed = 20
             if event.type == pg.KEYUP and event.key == pg.K_LSHIFT:
                 bird.speed = 10
+            if event.type == pg.KEYDOWN and event.key == pg.K_TAB and score.score >= 50:
+                score.score_up(-50)
+                gravity.add(Gravity(bird, 200, 500))
+                if pg.key.get_mods() & pg.KMOD_LSHIFT:
+                    shift_pressed = True
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -293,12 +346,23 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+        for bomb in pg.sprite.groupcollide(bombs,gravity, True, False).keys():
+            exps.add(Explosion(bomb, 50))
+
         if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
             score.update(screen)
             pg.display.update()
             time.sleep(2)
             return
+        
+        gravity.update()#key_lst)これを有効化すると、球がついてくる。
+        gravity.draw(screen)
+        if shift_pressed: #左shiftおされたら
+            if pg.key.get_mods() & pg.KMOD_LSHIFT:
+                num_beams = 5
+                neo_beam = NeoBeam(bird, num_beams)
+                beams.add(*neo_beam.gen_beams())
 
         bird.update(key_lst, screen)
         beams.update()
