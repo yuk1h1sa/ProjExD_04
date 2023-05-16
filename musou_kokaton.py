@@ -366,8 +366,8 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_TAB and score.score >= 50:
                 score.score_up(-50)
                 gravity.add(Gravity(bird, 200, 500))
-                if pg.key.get_mods() & pg.KMOD_LSHIFT:
-                    shift_pressed = True
+            if pg.key.get_mods() & pg.KMOD_LSHIFT:
+                shift_pressed = True
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
