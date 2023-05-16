@@ -101,7 +101,7 @@ class Bird(pg.sprite.Sprite):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
         screen.blit(self.image, self.rect)
-    
+
     def get_direction(self) -> tuple[int, int]:
         return self.dire
     
@@ -261,6 +261,40 @@ class Score:
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class Gravity(pg.sprite.Sprite):
+    """
+    重力球の追加
+    """
+    def __init__(self, bird, size, life):
+        super().__init__()
+        #self.rad =  size # ジュウリョクダマの半径：size
+        color = (1, 1, 1)  # 重力タマの色：黒
+        self.image = pg.Surface((2*size, 2*size))
+        pg.draw.circle(self.image, color, (size, size), size)
+        self.image.set_colorkey((0, 0, 0))
+        self.image.set_alpha(200)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx
+        self.rect.centery = bird.rect.centery
+        self.life = life
+        #self.speed = bird.speed
+    def update(self, ):#key_lst)これを追加すれば、球がついてくる機能を有効化できる。:
+        """
+        以下は球がついてくるようになる追加機能である。
+        sum_mv = [0, 0]
+        for k, mv in Bird.delta.items():
+            if key_lst[k]:
+                self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
+                sum_mv[0] += mv[0]
+                sum_mv[1] += mv[1]
+        if check_bound(self.rect) != (True, True):
+            for k, mv in Bird.delta.items():
+                if key_lst[k]:
+                    self.rect.move_ip(-self.speed*mv[0], -self.speed*mv[1])
+        """
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 def main():
     pg.display.set_caption("真！こうかとん無双")
@@ -273,7 +307,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
-
+    gravity = pg.sprite.Group()
     tmr = 0
     clock = pg.time.Clock()
     while True:
@@ -284,6 +318,9 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_TAB and score.score >= 50:
+                score.score_up(-50)
+                gravity.add(Gravity(bird, 200, 500))
                 if pg.key.get_mods() & pg.KMOD_LSHIFT:
                     shift_pressed = True
         screen.blit(bg_img, [0, 0])
@@ -305,6 +342,9 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+        for bomb in pg.sprite.groupcollide(bombs,gravity, True, False).keys():
+            exps.add(Explosion(bomb, 50))
+
         if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
             score.update(screen)
@@ -312,6 +352,8 @@ def main():
             time.sleep(2)
             return
         
+        gravity.update()#key_lst)これを有効化すると、球がついてくる。
+        gravity.draw(screen)
         if shift_pressed: #左shiftおされたら
             if pg.key.get_mods() & pg.KMOD_LSHIFT:
                 num_beams = 5
