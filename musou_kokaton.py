@@ -145,7 +145,7 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, spin=0):   #spinの初期値は０
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
@@ -153,6 +153,7 @@ class Beam(pg.sprite.Sprite):
         super().__init__()
         self.vx, self.vy = bird.get_direction()
         angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle += spin #angleにspinを加える
         self.image = pg.transform.rotozoom(pg.image.load(f"ex04/fig/beam.png"), angle, 2.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -170,6 +171,18 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+
+class NeoBeam: #追加機能４弾幕
+    def __init__(self, bird:Bird, num:int):
+        self.bird = bird
+        self.num = num
+
+    def gen_beams(self): #こうかとんに対し-50°~50°の範囲にbeamを発生させる
+        beam_ls = []
+        for spin in range(-50, 51, 25):
+            beam = Beam(self.bird, spin)
+            beam_ls.append(beam)
+        return beam_ls
 
 class Explosion(pg.sprite.Sprite):
     """
@@ -299,6 +312,7 @@ def main():
     clock = pg.time.Clock()
     while True:
         key_lst = pg.key.get_pressed()
+        shift_pressed = False
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
@@ -307,6 +321,8 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_TAB and score.score >= 50:
                 score.score_up(-50)
                 gravity.add(Gravity(bird, 200, 500))
+                if pg.key.get_mods() & pg.KMOD_LSHIFT:
+                    shift_pressed = True
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -338,6 +354,12 @@ def main():
         
         gravity.update()#key_lst)これを有効化すると、球がついてくる。
         gravity.draw(screen)
+        if shift_pressed: #左shiftおされたら
+            if pg.key.get_mods() & pg.KMOD_LSHIFT:
+                num_beams = 5
+                neo_beam = NeoBeam(bird, num_beams)
+                beams.add(*neo_beam.gen_beams())
+
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
