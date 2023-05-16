@@ -227,6 +227,22 @@ class Explosion(pg.sprite.Sprite):
             self.kill()
 
 
+class Shield(pg.sprite.Sprite):
+    def __init__(self,bird: Bird,life : int):
+         super().__init__()
+         self.image = pg.Surface((20,bird.rect.height*2))
+         pg.draw.rect(self.image,(0,0,0),pg.Rect(0,0, 20, bird.rect.height*2))
+         self.rect = self.image.get_rect()
+         self.rect.centerx = bird.rect.centerx+50
+         self.rect.centery = bird.rect.centery
+         self.life = life
+         
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill() #Shiledsグループからの削除
+
+
 class Enemy(pg.sprite.Sprite):
     """
     敵機に関するクラス
@@ -322,6 +338,8 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    Shields = pg.sprite.Group()
+
     gravity = pg.sprite.Group()
     tmr = 0
     clock = pg.time.Clock()
@@ -333,6 +351,11 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_CAPSLOCK:
+                if score.score >= 10 and len(Shields) == 0:
+                    Shields.add(Shield(bird,400))
+                    score.score -= 50
+
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and score.score >= 100:
                 bird.change_state("hyper",500)
                 score.score_up(-100)
@@ -386,6 +409,10 @@ def main():
             time.sleep(2)
             return
         
+        for bomb in pg.sprite.groupcollide(bombs, Shields, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)
+
         gravity.update()#key_lst)これを有効化すると、球がついてくる。
         gravity.draw(screen)
         if shift_pressed: #左shiftおされたら
@@ -403,6 +430,9 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        Shields.update() #防御壁の更新
+        Shields.draw(screen) #防御壁の描画
+
         score.update(screen)
         pg.display.update()
         tmr += 1
