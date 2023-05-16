@@ -199,6 +199,24 @@ class Explosion(pg.sprite.Sprite):
             self.kill()
 
 
+class Shield(pg.sprite.Sprite):
+    def __init__(self,bird: Bird,life : int):
+         super().__init__()
+         self.image = pg.Surface((20,bird.rect.height*2))
+         pg.draw.rect(self.image,(0,0,0),pg.Rect(0,0, 20, bird.rect.height*2))
+         self.rect = self.image.get_rect()
+         self.rect.centerx = bird.rect.centerx+50
+         self.rect.centery = bird.rect.centery
+         self.life = life
+         
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill() #Shiledsグループからの削除
+
+
+
+
 class Enemy(pg.sprite.Sprite):
     """
     敵機に関するクラス
@@ -260,6 +278,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    Shields = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -270,6 +289,7 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -305,6 +325,7 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+
         score.update(screen)
         pg.display.update()
         tmr += 1
