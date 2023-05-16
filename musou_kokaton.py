@@ -101,7 +101,6 @@ class Bird(pg.sprite.Sprite):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
         screen.blit(self.image, self.rect)
-        
     
     def get_direction(self) -> tuple[int, int]:
         return self.dire
@@ -259,8 +258,8 @@ def main():
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
-    exps = pg.sprite.Group() #爆発エフェクトグループ
-    emys = pg.sprite.Group() #敵機グループ
+    exps = pg.sprite.Group()
+    emys = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -271,13 +270,12 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
+                bird.speed = 20
+            if event.type == pg.KEYUP and event.key == pg.K_LSHIFT:
+                bird.speed = 10
         screen.blit(bg_img, [0, 0])
-        if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
-            bird.speed = 20
-        if event.type == pg.KEYUP and event.key == pg.K_LSHIFT:
-            bird.speed = 10
-            
-        
+
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
 
@@ -301,7 +299,6 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
-        
 
         bird.update(key_lst, screen)
         beams.update()
@@ -316,6 +313,7 @@ def main():
         pg.display.update()
         tmr += 1
         clock.tick(50)
+
 
 if __name__ == "__main__":
     pg.init()
